@@ -1,42 +1,58 @@
-import os
-
-
+import streamlit as st 
 import openai
-from dotenv import load_dotenv
-load_dotenv()
+from streamlit_chat import message
+import requests
+
+openai.api_key="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"
+
+def generate_output(prompt):
 
 
-openai.api_key = os.getenv('OPENAI_API_KEY')
+  res=openai.Completion.create(
+      engine="text-davinci-003",
+      prompt=prompt,
+      temperature=0.5,
+      max_tokens=512
+  )
+  return res.choices[0].text
+
+st.title("WASTE MANAGEMENT")
+def add_bg_from_url():
+    st.markdown(
+         f"""
+         <style>
+         .stApp {{
+             background-image: url("https://c0.wallpaperflare.com/preview/828/635/683/pollution-rubbish-waste-environment.jpg");
+             background-attachment: fixed;
+             background-size: cover
+         }}
+         </style>
+         """,
+         unsafe_allow_html=True
+     )
+
+add_bg_from_url()
+
+if 'generated' not in st.session_state:
+    st.session_state['generated'] = []
+
+if 'past' not in st.session_state:
+    st.session_state['past'] = []
+
+def get_text():
+    input_text = st.text_input("You: ","", key="input")
+    return input_text 
 
 
-def text_complition(prompt: str) -> dict:
-    '''
-    Call Openai API for text completion
+user_input = get_text()
 
-    Parameters:
-        - prompt: user query (str)
+if user_input:
+    output=generate_output(user_input)
+    st.session_state.past.append(user_input)
+    st.session_state.generated.append(output)
 
-    Returns:
-        - dict
-    '''
-    try:
-        response = openai.Completion.create(
-            model='text-davinci-003',
-            prompt=f'Human: {prompt}\nAI: ',
-            temperature=0.9,
-            max_tokens=150,
-            top_p=1,
-            frequency_penalty=0,
-            presence_penalty=0.6,
-            stop=['Human:', 'AI:']
-        )
-        return {
-            'status': 1,
-            'response': response['choices'][0]['text']
-        }
-    except:
-        return {
-            'status': 0,
-            'response': ''
-        }
-        
+if st.session_state['generated']:
+
+    for i in range(len(st.session_state['generated'])-1, -1, -1):
+        message(st.session_state["generated"][i], key=str(i))
+        message(st.session_state['past'][i], is_user=True, key=str(i) + '_user')
